@@ -9,41 +9,39 @@ from sqlalchemy import text
 from datetime import date
 
 # ←←← Nome correto e único do Blueprint
-bp = Blueprint('api', __name__)
+api_bp = Blueprint('api', __name__)
 
 
 # ========================================
 # 1. LOGIN (POST /api/login)
 # ========================================
-@bp.route('/login', methods=['POST'])
+@api_bp.route('/login', methods=['POST'])
 def login():
-    try:
-        data = request.get_json()
-        email = data.get('email')
-        senha = data.get('senha')
+    data = request.get_json()
+    email = data.get('email')
+    senha = data.get('senha')
 
-        professor = Professor.query.filter_by(email=email).first()
+    professor = Professor.query.filter_by(email=email).first()
 
-        if professor and check_password_hash(professor.senha_hash, senha):
-            token = create_access_token(identity=professor.id)
-            return jsonify({
-                "token": token,
-                "professor": {
-                    "id": professor.id,
-                    "nome": professor.nome,
-                    "email": professor.email
-                }
-            }), 200
+    # Compara senha em texto puro (sem hash)
+    if professor and professor.senha_hash == senha:
+        token = create_access_token(identity=str(professor.id))
+        return jsonify({
+            "token": token,
+            "professor": {
+                "id": professor.id,
+                "nome": professor.nome,
+                "email": professor.email
+            }
+        }), 200
 
-        return jsonify({"erro": "Credenciais inválidas"}), 401
-    except Exception as e:
-        return jsonify({"erro": "Erro no login", "detalhes": str(e)}), 500
+    return jsonify({"erro": "Credenciais inválidas"}), 401
 
 
 # ========================================
 # 2. TURMAS (GET /api/turmas)
 # ========================================
-@bp.route('/turmas', methods=['GET'])
+@api_bp.route('/turmas', methods=['GET'])
 @jwt_required()
 def get_turmas():
     prof_id = get_jwt_identity()
@@ -61,7 +59,7 @@ def get_turmas():
 # ========================================
 # 3. ALUNOS DA TURMA (GET /api/turmas/<id>/alunos)
 # ========================================
-@bp.route('/turmas/<int:turma_id>/alunos', methods=['GET'])
+@api_bp.route('/turmas/<int:turma_id>/alunos', methods=['GET'])
 @jwt_required()
 def get_alunos_turma(turma_id):
     alunos = Aluno.query.filter_by(turma_id=turma_id).all()
@@ -76,7 +74,7 @@ def get_alunos_turma(turma_id):
 # ========================================
 # 4. LANÇAR AULA + FREQUÊNCIA (POST /api/aulas)
 # ========================================
-@bp.route('/aulas', methods=['POST'])
+@api_bp.route('/aulas', methods=['POST'])
 @jwt_required()
 def create_aula():
     data = request.get_json()
@@ -104,7 +102,7 @@ def create_aula():
 # ========================================
 # 5. CRUD DE NOTAS
 # ========================================
-@bp.route('/notas', methods=['POST'])
+@api_bp.route('/notas', methods=['POST'])
 @jwt_required()
 def create_nota():
     data = request.get_json()
@@ -119,7 +117,7 @@ def create_nota():
     return jsonify({"mensagem": "Nota lançada", "nota_id": nota.id}), 201
 
 
-@bp.route('/notas/<int:aluno_id>', methods=['GET'])
+@api_bp.route('/notas/<int:aluno_id>', methods=['GET'])
 @jwt_required()
 def get_notas_aluno(aluno_id):
     notas = Nota.query.filter_by(aluno_id=aluno_id).all()
@@ -139,7 +137,7 @@ def get_notas_aluno(aluno_id):
     return jsonify({"notas": lista}), 200
 
 
-@bp.route('/notas/<int:nota_id>', methods=['PUT'])
+@api_bp.route('/notas/<int:nota_id>', methods=['PUT'])
 @jwt_required()
 def update_nota(nota_id):
     nota = Nota.query.get_or_404(nota_id)
@@ -149,7 +147,7 @@ def update_nota(nota_id):
     return jsonify({"mensagem": "Nota atualizada"}), 200
 
 
-@bp.route('/notas/<int:nota_id>', methods=['DELETE'])
+@api_bp.route('/notas/<int:nota_id>', methods=['DELETE'])
 @jwt_required()
 def delete_nota(nota_id):
     nota = Nota.query.get_or_404(nota_id)
@@ -161,7 +159,7 @@ def delete_nota(nota_id):
 # ========================================
 # 6. RELATÓRIOS
 # ========================================
-@bp.route('/relatorios/boletim/<int:aluno_id>', methods=['GET'])
+@api_bp.route('/relatorios/boletim/<int:aluno_id>', methods=['GET'])
 @jwt_required()
 def get_boletim(aluno_id):
     result = db.session.execute(
@@ -172,7 +170,7 @@ def get_boletim(aluno_id):
     return jsonify({"boletim": boletim}), 200
 
 
-@bp.route('/relatorios/frequencia/<int:turma_id>', methods=['GET'])
+@api_bp.route('/relatorios/frequencia/<int:turma_id>', methods=['GET'])
 @jwt_required()
 def get_frequencia_turma(turma_id):
     aulas = Aula.query.filter_by(turma_id=turma_id).order_by(Aula.data).all()
@@ -189,7 +187,7 @@ def get_frequencia_turma(turma_id):
     return jsonify({"frequencia": relatorio}), 200
 
 
-@bp.route('/relatorios/conteudos/<int:turma_id>', methods=['GET'])
+@api_bp.route('/relatorios/conteudos/<int:turma_id>', methods=['GET'])
 @jwt_required()
 def get_conteudos_turma(turma_id):
     aulas = Aula.query.filter_by(turma_id=turma_id).order_by(Aula.data.desc()).all()
@@ -204,7 +202,7 @@ def get_conteudos_turma(turma_id):
 # ========================================
 # 7. CALENDÁRIO DO PROFESSOR
 # ========================================
-@bp.route('/calendario', methods=['GET'])
+@api_bp.route('/calendario', methods=['GET'])
 @jwt_required()
 def get_calendario():
     prof_id = get_jwt_identity()

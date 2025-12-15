@@ -2,20 +2,33 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
-from flask_migrate import Migrate
-from app.config import Config
+from flask_cors import CORS
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 db = SQLAlchemy()
-migrate = Migrate()
+jwt = JWTManager()
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'vg211098')
+    app.config['JWT_SECRET_KEY'] = app.config['SECRET_KEY']
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+    CORS(app)
     db.init_app(app)
-    JWTManager(app)
+    jwt.init_app(app)
 
-    from app.routes import bp
-    app.register_blueprint(bp, url_prefix='/api')
+    # Registra o blueprint de rotas
+    from .routes import api_bp
+    app.register_blueprint(api_bp, url_prefix='/api')
+
+    # Rota raiz para testar se a API está viva
+    @app.route('/')
+    def index():
+        return {"mensagem": "API DiarioApp rodando! Acesse /api/login para testar."}
 
     return app
