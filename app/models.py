@@ -1,6 +1,4 @@
 # app/models.py
-# Modelos SQLAlchemy alinhados com o banco de dados diarioapp_db
-# Atualizado em 02/12/2025 - Atende 100% à atividade
 
 from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
